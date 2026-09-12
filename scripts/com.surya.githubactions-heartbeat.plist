@@ -7,7 +7,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/surya/Documents/HCL_Work/NetDevops_agent/githubactions_sample/scripts/push_heartbeat.sh</string>
+        <string>/Users/surya/githubactions_sample/scripts/push_heartbeat.sh</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
@@ -19,8 +19,8 @@
     <key>RunAtLoad</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/Users/surya/Documents/HCL_Work/NetDevops_agent/githubactions_sample/scripts/launchd.out.log</string>
+    <string>/Users/surya/githubactions_sample/scripts/launchd.out.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/surya/Documents/HCL_Work/NetDevops_agent/githubactions_sample/scripts/launchd.err.log</string>
+    <string>/Users/surya/githubactions_sample/scripts/launchd.err.log</string>
 </dict>
 </plist>
