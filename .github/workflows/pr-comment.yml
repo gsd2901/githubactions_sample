@@ -1,13 +1,9 @@
 name: PR Comment (CHG test)
 
-# Posts a comment directly on the PR conversation when it's opened or
-# updated -- mirrors the NAAC bot's real behavior (comments on the PR
-# itself, not a separate tracking issue).
-#
-# Manual runs (workflow_dispatch) let you pick which of the six
-# comments/*.md files to post, so you can simulate the gate-by-gate
-# progression (checklist -> config preview -> lab post-check -> ...)
-# on demand instead of only at PR-open time.
+# Posts the next comment in sequence on the PR each time it fires:
+# PR opened -> 01_checklist.md, next push -> 02_catalog_pr.md, and so on
+# through all six comments/*.md files. Mirrors the NAAC bot posting a
+# new gate-status comment as the real pipeline progresses.
 
 on:
   pull_request:
@@ -15,9 +11,8 @@ on:
   workflow_dispatch:
     inputs:
       comment_file:
-        description: 'File under comments/ to post (e.g. 03_config_preview.md)'
+        description: 'Force-post a specific file under comments/ (overrides auto-sequence)'
         required: false
-        default: '01_checklist.md'
       pr_number:
         description: 'PR number to comment on (required for manual runs)'
         required: false
@@ -32,11 +27,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Post comment on PR
+      - name: Post next comment on PR
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+
+            const SEQUENCE = [
+              '01_checklist.md',
+              '02_catalog_pr.md',
+              '03_config_preview.md',
+              '04_lab_postcheck.md',
+              '05_prod_postcheck.md',
+              '06_infoblox_usage.md',
+            ];
 
             const prNumber = context.payload.pull_request
               ? context.payload.pull_request.number
@@ -47,9 +51,27 @@ jobs:
               return;
             }
 
-            const file = context.payload.pull_request
-              ? 'comments/01_checklist.md'
-              : `comments/${core.getInput('comment_file') || '01_checklist.md'}`;
+            const forcedFile = core.getInput('comment_file');
+            let file;
+
+            if (forcedFile) {
+              file = `comments/${forcedFile}`;
+            } else {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                per_page: 100,
+              });
+              const botComments = comments.filter((c) => c.user?.type === 'Bot');
+              const nextIndex = botComments.length;
+
+              if (nextIndex >= SEQUENCE.length) {
+                core.info(`All ${SEQUENCE.length} comments already posted on PR #${prNumber}, nothing to do.`);
+                return;
+              }
+              file = `comments/${SEQUENCE[nextIndex]}`;
+            }
 
             const body = fs.readFileSync(file, 'utf8');
 
