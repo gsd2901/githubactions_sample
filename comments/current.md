@@ -1,4 +1,4 @@
-### NAAC Lab post-check
+### NAAC Prod post-check
 
 | Field | Value |
 |---|---|
@@ -10,6 +10,7 @@
 
 | Device | Tier | VLAN | Name | SVI | HSRP | Trunk |
 |---|---|---|---|---|---|---|
-| DE99-LAB-SW-01 | lab | ✅ | — | ✅ | — | — |
-| DE99-LAB-SW-02 | lab | ✅ | — | ✅ | — | — |
-| DE99-LAB-SW-03 | lab | ✅ | — | ✅ | — | — |
+| DE999-PROD-SW-03 | distribution | ✅ | ✅ | ✅ | ✅ | ✅ |
+| DE999-PROD-SW-04 | distribution | ✅ | ✅ | ✅ | ✅ | ✅ |
+| DE999-PROD-SW-05 | access | ✅ | ✅ | — | — | ✅ |
+| DE999-PROD-SW-06 | access | ✅ | ✅ | — | — | ✅ |
