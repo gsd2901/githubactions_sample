@@ -1,0 +1,63 @@
+name: PR Comment (CHG test)
+
+# Posts a comment directly on the PR conversation when it's opened or
+# updated -- mirrors the NAAC bot's real behavior (comments on the PR
+# itself, not a separate tracking issue).
+#
+# Manual runs (workflow_dispatch) let you pick which of the six
+# comments/*.md files to post, so you can simulate the gate-by-gate
+# progression (checklist -> config preview -> lab post-check -> ...)
+# on demand instead of only at PR-open time.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+    inputs:
+      comment_file:
+        description: 'File under comments/ to post (e.g. 03_config_preview.md)'
+        required: false
+        default: '01_checklist.md'
+      pr_number:
+        description: 'PR number to comment on (required for manual runs)'
+        required: false
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  post-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Post comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            const prNumber = context.payload.pull_request
+              ? context.payload.pull_request.number
+              : Number(core.getInput('pr_number'));
+
+            if (!prNumber) {
+              core.setFailed('No PR number available (pass pr_number for manual runs).');
+              return;
+            }
+
+            const file = context.payload.pull_request
+              ? 'comments/01_checklist.md'
+              : `comments/${core.getInput('comment_file') || '01_checklist.md'}`;
+
+            const body = fs.readFileSync(file, 'utf8');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
+
+            core.info(`Posted ${file} to PR #${prNumber}`);
