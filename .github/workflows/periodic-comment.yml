@@ -1,73 +1,46 @@
-name: Heartbeat Comment (triggered by local push)
-
-# This fires when the local heartbeat script (running on Surya's Mac via
-# launchd) pushes an updated heartbeat/heartbeat.log file. Also runnable
-# on-demand from the Actions tab.
+name: Push Comment (triggered by local push)
 
 on:
   push:
     branches: [main]
     paths:
-      - 'heartbeat/**'
+      - 'comments/current.md'
   workflow_dispatch: {}
 
 permissions:
   issues: write
 
 jobs:
-  heartbeat:
+  post-comment:
     runs-on: ubuntu-latest
     steps:
-      - name: Post heartbeat comment
+      - uses: actions/checkout@v4
+
+      - name: Post comment
         uses: actions/github-script@v7
         with:
           script: |
-            const TITLE = 'GitHub Actions Heartbeat';
+            const fs = require('fs');
+            const TITLE = 'NAAC Pipeline Comments (test)';
             const { owner, repo } = context.repo;
+            const body = fs.readFileSync('comments/current.md', 'utf8');
 
             const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner,
-              repo,
-              state: 'open',
-              per_page: 100,
+              owner, repo, state: 'open', per_page: 100,
             });
-
-            let issue = openIssues.find(
-              (i) => i.title === TITLE && !i.pull_request
-            );
+            let issue = openIssues.find((i) => i.title === TITLE && !i.pull_request);
 
             if (!issue) {
               const created = await github.rest.issues.create({
-                owner,
-                repo,
-                title: TITLE,
-                body:
-                  'Tracking issue for periodic heartbeat pushes from a local ' +
-                  'script. Leave this open — each push adds a new comment below.',
+                owner, repo, title: TITLE,
+                body: 'Tracking issue for pushed test comments (mirrors NAAC pipeline comment format).',
               });
               issue = created.data;
               core.info(`Created tracking issue #${issue.number}`);
             }
 
-            const now = new Date().toISOString();
-            const body = [
-              '### Heartbeat',
-              '',
-              '| Field | Value |',
-              '|---|---|',
-              `| Run | #${context.runNumber} |`,
-              `| Run ID | ${context.runId} |`,
-              `| Triggered by | ${context.eventName} |`,
-              `| Commit | ${context.sha.substring(0, 7)} |`,
-              `| Timestamp (UTC) | ${now} |`,
-              '| Status | ✅ pass |',
-            ].join('\n');
-
             await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: issue.number,
-              body,
+              owner, repo, issue_number: issue.number, body,
             });
 
-            core.info(`Posted heartbeat comment to issue #${issue.number}`);
+            core.info(`Posted comment to issue #${issue.number}`);
